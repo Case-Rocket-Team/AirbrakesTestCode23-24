@@ -13,7 +13,7 @@ SerialFlashFile file;
 // sampling interval in milliseconds - seems to work at 10 milliseconds
 const uint32_t sampleInterval = 10;
 
-const byte PIN_FLASH_CS = 7; // Change this to match the Chip Select pin on your board
+const byte PIN_FLASH_CS = 10; // Change this to match the Chip Select pin on your board
 
 // edit this structure to hold one set of parameters you want to log
 struct oneRecordType {
