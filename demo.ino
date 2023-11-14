@@ -154,14 +154,16 @@ void loop() {
   Serial.println(resultantG);
   Serial.println("*************************************");
 
-  if(gVal.z < 0){
+  if(resultantG > 2){
     accel_flag = true;
   }
 
   if(accel_flag){
+    int writeAmount = (int)(255/4) * (resultantG - 2);
     encoder.write(0);
     digitalWrite(MOTOR_IN1, LOW);
-    digitalWrite(MOTOR_IN2, HIGH);
+    analogWrite(MOTOR_IN2, writeAmount);
+    
   }
  
   delay(1000);
