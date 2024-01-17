@@ -102,8 +102,18 @@ void setMotor(int dir, int pwmVal, int in1, int in2){
   //Serial.println(dir);
   //Serial.println(pwmVal);
 
-  analogWrite(in1, pwmVal);
-  digitalWrite(in2, dir);
+  if(dir){
+    digitalWrite(in1, LOW);
+    analogWrite(in2, pwmVal);
+  
+  } else {
+    digitalWrite(in2, LOW);
+    analogWrite(in1, pwmVal);
+  
+  }
+
+  //analogWrite(in1, pwmVal);
+  //digitalWrite(in2, dir);
 }
 
 void readEncoder(){
@@ -117,6 +127,9 @@ void readEncoder(){
   int b = digitalRead(ENCB);
   Serial.println(b);
   Serial.println(" ");
+  int u = target - posi;
+  float pwr = fabs(u);
+  setMotor(dir, pwr, IN1, IN2);
 
   if(posi > target){
     Serial.println("Here");
