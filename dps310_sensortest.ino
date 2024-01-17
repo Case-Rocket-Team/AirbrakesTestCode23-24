@@ -9,8 +9,10 @@ volatile int posi = 0; // specify posi as volatile
 long prevT = 0;
 float eprev = 0;
 float eintegral = 0;
+int dir = 1;
 int a = digitalRead(ENCA);
 int b = digitalRead(ENCB);
+int target = 20;
 
 void setup() {
   Serial.begin(9600);
@@ -30,7 +32,7 @@ void setup() {
 void loop() {
   
   // set target position
-  int target = 20;
+  
   //int target = 250*sin(prevT/1e6);
 
   // PID constants
@@ -72,8 +74,9 @@ void loop() {
   }
 
   // motor direction
-  int dir = 1;
-  if(u<0){
+  
+  if(u<0 || posi > target){
+    Serial.println("Here");
     dir = 0;
     
   }
@@ -98,18 +101,9 @@ void loop() {
 void setMotor(int dir, int pwmVal, int in1, int in2){
   //Serial.println(dir);
   //Serial.println(pwmVal);
-  if(dir == 1){
-    analogWrite(in1,pwmVal);
-    digitalWrite(in2,LOW);
-  }
-  else if(dir == -1){
-    digitalWrite(in1,LOW);
-    analogWrite(in2,pwmVal);
-  }
-  else{
-    digitalWrite(in1,LOW);
-    digitalWrite(in2,LOW);
-  }  
+
+  analogWrite(in1, pwmVal);
+  digitalWrite(in2, dir);
 }
 
 void readEncoder(){
@@ -117,11 +111,18 @@ void readEncoder(){
   int newB = digitalRead(ENCB);
   Serial.println("Reading Encoder");
   Serial.println(posi);
+  Serial.println(dir);
   Serial.print(digitalRead(ENCA));
   Serial.print(" ");
   int b = digitalRead(ENCB);
   Serial.println(b);
   Serial.println(" ");
+
+  if(posi > target){
+    Serial.println("Here");
+    dir = 0;
+    
+  }
   
   if(newA == 1 && a == 0){
     if(b == 1)
@@ -129,6 +130,7 @@ void readEncoder(){
     else
       posi--;
   }
+
   a = newA;
   b = newB;
 }
