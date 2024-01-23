@@ -9,20 +9,21 @@ volatile long encoderCount = 0;
 long previousTime = 0;
 float ePrevious = 0;
 float eIntegral = 0;
+const int target = 1000;
 
 void setup(){
   Serial.begin(9600);
   pinMode(DIR1, OUTPUT);
   pinMode(PWM1, OUTPUT);
   pinMode(encoderPinA, INPUT);
-  pinMode(encoderPinB, IMPUT);
+  pinMode(encoderPinB, INPUT);
 
   attachInterrupt(digitalPinToInterrupt(encoderPinA), handleEncoder, RISING);
 }
 
 void loop(){
 
-  int target = 1000;
+  
   
   float kp = 0.0;
   float kd = 0.0;
@@ -31,12 +32,15 @@ void loop(){
   
   moveMotor(DIR1, PWM1, u);
   
-  Serial.print(target);
-  Serial.print(", ");
-  Serial.print(encoderCount);
+  Serial.println(target);
+  Serial.println(", ");
+  Serial.println(encoderCount);
 }
 
 void handleEncoder(){
+  Serial.println(target);
+  Serial.println(", ");
+  Serial.println(encoderCount);
   if(digitalRead(encoderPinA) > digitalRead(encoderPinB)){
     encoderCount++;
   }
