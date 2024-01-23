@@ -59,4 +59,18 @@ void moveMotor(int dirPin, int pwmPin, float u){
   analogWrite(pwmPin, speed);
 }
 
-float pidController(int target, //to be implemented
+float pidController(int target, float kp, float kd, float ki){
+  long currentTime = micros();
+  float deltaT = ((float)(currentTime - previousTime))/1.0e6;
+
+  int e = encoderCount-target;
+  float eDerivative = (e-ePrevious)/deltaT;
+  eIntegral = eIntegral + e*deltaT;
+
+  float u = (kp*e) + (kd*eDerivative) + (ki*eIntegral);
+
+  previousTime = currentTime;
+  ePrevious = e;
+
+  return u;
+}
