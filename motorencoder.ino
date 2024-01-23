@@ -12,7 +12,7 @@ float eIntegral = 0;
 const int target = 1000;
 
 void setup(){
-  Serial.begin(9600);
+  Serial.begin(11520);
   pinMode(DIR1, OUTPUT);
   pinMode(PWM1, OUTPUT);
   pinMode(encoderPinA, INPUT);
@@ -32,8 +32,8 @@ void loop(){
   
   moveMotor(DIR1, PWM1, u);
   
-  Serial.println(target);
-  Serial.println(", ");
+  Serial.print(target);
+  Serial.print(", ");
   Serial.println(encoderCount);
 }
 
