@@ -1,8 +1,8 @@
 #define DIR1 37
 #define PWM1 36
 
-#define encoderPinA 23
-#define encoderPinB 22
+#define encoderPinA 22
+#define encoderPinB 23
 
 volatile long encoderCount = 0;
 
@@ -22,9 +22,6 @@ void setup(){
 }
 
 void loop(){
-
-  
-  
   float kp = 0.0;
   float kd = 0.0;
   float ki = 0.0;
@@ -38,10 +35,14 @@ void loop(){
 }
 
 void handleEncoder(){
+  Serial.begin(11520);
+  int a = digitalRead(encoderPinA)
+  int b = digitalRead(encoderPinB)
   Serial.println(target);
   Serial.println(", ");
-  Serial.println(encoderCount);
-  if(digitalRead(encoderPinA) > digitalRead(encoderPinB)){
+  Serial.println();
+
+  if(digitalRead(encoderPinA) < digitalRead(encoderPinB)){
     encoderCount++;
   }
   else{
