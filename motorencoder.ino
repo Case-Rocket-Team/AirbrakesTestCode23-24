@@ -9,7 +9,7 @@ volatile long encoderCount = 0;
 long previousTime = 0;
 float ePrevious = 0;
 float eIntegral = 0;
-const int target = 1000;
+const int target = -10;
 
 void setup(){
   Serial.begin(11520);
@@ -18,7 +18,7 @@ void setup(){
   pinMode(encoderPinA, INPUT);
   pinMode(encoderPinB, INPUT);
 
-  attachInterrupt(digitalPinToInterrupt(encoderPinA), handleEncoder, RISING);
+  //attachInterrupt(digitalPinToInterrupt(encoderPinA), handleEncoder, RISING);
 }
 
 void loop(){
@@ -28,19 +28,32 @@ void loop(){
   float u = pidController(target, kp, kd, ki);
   
   moveMotor(DIR1, PWM1, u);
-  
+  int a = digitalRead(encoderPinA);
+  int b = digitalRead(encoderPinB);
   Serial.print(target);
   Serial.print(", ");
-  Serial.println(encoderCount);
+  Serial.print(a);
+  Serial.print(" ");
+  Serial.print(b);
+  Serial.println(" from loop");
+  
+  if(digitalRead(encoderPinA) < digitalRead(encoderPinB)){
+    encoderCount++;
+  }
+  else{
+    encoderCount--;
+  }
+
 }
 
 void handleEncoder(){
   Serial.begin(11520);
-  int a = digitalRead(encoderPinA)
-  int b = digitalRead(encoderPinB)
-  Serial.println(target);
-  Serial.println(", ");
-  Serial.println();
+  int a = digitalRead(encoderPinA);
+  int b = digitalRead(encoderPinB);
+  Serial.print(target);
+  Serial.print(", ");
+  Serial.print(encoderCount);
+  Serial.println(" from interrupt");
 
   if(digitalRead(encoderPinA) < digitalRead(encoderPinB)){
     encoderCount++;
