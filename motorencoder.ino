@@ -9,7 +9,7 @@ volatile long encoderCount = 0;
 long previousTime = 0;
 float ePrevious = 0;
 float eIntegral = 0;
-const int target = 100000;
+const int target = 2000000;
 int direction = 1;
 
 void setup(){
