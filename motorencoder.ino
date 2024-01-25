@@ -9,7 +9,8 @@ volatile long encoderCount = 0;
 long previousTime = 0;
 float ePrevious = 0;
 float eIntegral = 0;
-const int target = -10;
+const int target = 100000;
+int direction = 1;
 
 void setup(){
   Serial.begin(11520);
@@ -32,15 +33,14 @@ void loop(){
   int b = digitalRead(encoderPinB);
   Serial.print(target);
   Serial.print(", ");
-  Serial.print(a);
+  Serial.print(encoderCount);
   Serial.print(" ");
-  Serial.print(b);
-  Serial.println(" from loop");
+  Serial.println(direction);
   
   if(digitalRead(encoderPinA) < digitalRead(encoderPinB)){
     encoderCount++;
   }
-  else{
+  else if(digitalRead(encoderPinA) > digitalRead(encoderPinB)){
     encoderCount--;
   }
 
@@ -69,12 +69,18 @@ void moveMotor(int dirPin, int pwmPin, float u){
   if(speed > 255){
     speed = 255;
   }
-  int direction = 1;
-  if(u<0){
+  if(encoderCount > target){
     direction = 0;
   }
-  digitalWrite(dirPin, direction);
-  analogWrite(pwmPin, speed);
+  if(direction == 1){
+    digitalWrite(dirPin, direction);
+    analogWrite(pwmPin, speed);
+  } else {
+    Serial.println("second block");
+    digitalWrite(dirPin, LOW);
+    analogWrite(pwmPin, speed);
+  }
+  
 }
 
 float pidController(int target, float kp, float kd, float ki){
