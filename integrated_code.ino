@@ -3,6 +3,8 @@
 #include <SPI.h>
 #include <Adafruit_BMP280.h>
 #include <ICM20948_WE.h>
+#include <LittleFS.h>
+
 
 
 #define ICM20948_ADDR 0x69
@@ -14,6 +16,7 @@
 
 #define FILE_SIZE_512K 524288L
 #define FILE_SIZE_1M   1048576L
+#define PROG_FLASH_SIZE 1024 * 1024 * 1
 
 
 Adafruit_BMP280 bmp(BMP_CS, BMP_MOSI, BMP_MISO,  BMP_SCK);
@@ -23,6 +26,7 @@ float altitudes[] = {0, 0, 0, 0, 0}; //stores recent altitudes
 float accelerations[] = {0, 0, 0, 0, 0}; //stores recent acceleration values
 
 SerialFlashFile file;
+LittleFS_Program myfs;
 
 const uint32_t sampleInterval = 10;
 const byte PIN_FLASH_CS = 10;
@@ -64,14 +68,36 @@ uint8_t dumpFileNumber = 1;
 uint8_t isRecording = false;
 
 uint32_t prevMillis, currentMillis = 0;
+uint32_t diskSize;
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
-  if (!SerialFlash.begin( PIN_FLASH_CS )) {
-    Serial.println(F("SPI Flash not detected. Freezing..."));
-    while (1);
+  // see if the Flash is present and can be initialized:
+  // lets check to see if the T4 is setup for security first
+  #if ARDUINO_TEENSY40
+    if ((IOMUXC_GPR_GPR11 & 0x100) == 0x100) {
+      //if security is active max disk size is 960x1024
+      if(PROG_FLASH_SIZE > 960*1024){
+        diskSize = 960*1024;
+        Serial.printf("Security Enables defaulted to %u bytes\n", diskSize);  
+      } else {
+        diskSize = PROG_FLASH_SIZE;
+        Serial.printf("Security Not Enabled using %u bytes\n", diskSize);
+      }
+    }
+  #else
+    diskSize = PROG_FLASH_SIZE;
+  #endif
+
+  // checks that the LittFS program has started with the disk size specified
+  if (!myfs.begin(diskSize)) {
+    Serial.printf("Error starting %s\n", "PROGRAM FLASH DISK");
+    while (1) {
+      // Error, so don't do anything more - stay stuck here
+    }
   }
+  Serial.println("LittleFS initialized.");
 
   if(!myIMU.init()){
     Serial.println("ICM20948 is not responding. Freezing...");
@@ -211,4 +237,3 @@ bool apogeeDetection(){
 bool touchdownDetection(){
   
 }
-
