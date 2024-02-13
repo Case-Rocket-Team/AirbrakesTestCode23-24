@@ -48,7 +48,37 @@ float accelerations[] = {0, 0, 0, 0, 0}; //stores recent acceleration values
 boolean isCalibrated = false; //boolean flag to prevent action before calibration completes
 
 
+//fully retracts airbrakes from any position
+void retractAirbrakes(){
+  
+}
 
+//helper method to extend airbrakes
+void extendAirbrakes(int target){
+  
+}
+
+//helper method to calculate motor count required to extend airbrakes by angle passed in
+int calculateTargetCount(float angle){
+  return 0;
+}
+
+boolean detectLaunch(){
+  boolean launch = false;
+  
+  while(!launch){
+    myIMU.readSensor();
+    xyzFloat accRaw = myIMU.getAccRawValues();
+    xyzFloat corrAccRaw = myIMU.getCorrectedAccRawValues();
+    xyzFloat gVal = myIMU.getGValues();
+    float resultantG = myIMU.getResultantG(gVal);
+    if(abs(resultantG) > 3.0){
+      launch = true;
+    }
+    return launch;
+    
+  }
+}
 
 void setup() {
   // put your setup code here, to run once:
@@ -272,47 +302,19 @@ void sensorTest(){
 
 //launch ready state
 void padIdle(){
-  launchDetected = detectLaunch();
+  bool launchDetected = detectLaunch();
   while(!launchDetected){
     delay(10);
     launchDetected = detectLaunch();
   }
-   
   }
 
-  
-}
-
-//helper method to calculate motor count required to extend airbrakes by angle passed in
-int calculateTargetCount(float angle){
-  return 0;
-}
 
 
-//helper method to extend airbrakes
-void extendAirbrakes(int target){
-  
-}
 
 
-//fully retracts airbrakes from any position
-void retractAirbrakes(){
-  
-}
 
-boolean detectLaunch(){
-  boolean launch = false;
-  
-  while(!launch){
-    myIMU.readSensor();
-    xyzFloat accRaw = myIMU.getAccRawValues();
-    xyzFloat corrAccRaw = myIMU.getCorrectedAccRawValues();
-    xyzFloat gVal = myIMU.getGValues();
-    float resultantG = myIMU.getResultantG(gVal);
-    if(abs(resultantG) > 3.0){
-      launch = true;
-    }
-    return launch;
-    
-  }
-}
+
+
+
+
