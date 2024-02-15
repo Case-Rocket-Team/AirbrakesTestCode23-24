@@ -31,7 +31,7 @@ Adafruit_Sensor *dps_pressure = dps.getPressureSensor();
 //define limit switch
 #define limitSwitchPin 10
 
-
+Encoder myEnc(encoderPinA, encoderPinB);
 //OBSOLETE WITH NEW ENCODER LIBRARY
 //create variables to help with PID controller
 //volatile long encoderCount = 0; 
@@ -51,11 +51,26 @@ boolean isCalibrated = false; //boolean flag to prevent action before calibratio
 //fully retracts airbrakes from any position
 void retractAirbrakes(){
   
+  while(myEnc.read() > 0){
+    Serial.println(myEnc.read());
+    Serial.println("got here");
+    digitalWrite(DIR1, LOW);
+    analogWrite(PWM1, 255);
+  }
+  digitalWrite(DIR1, LOW);
+  analogWrite(PWM1, 0);
+  
 }
 
 //helper method to extend airbrakes
 void extendAirbrakes(int target){
-  
+  while(myEnc.read() < target){
+    digitalWrite(PWM1, LOW);
+    analogWrite(DIR1, 255);
+    Serial.println(myEnc.read());
+  }
+  digitalWrite(PWM1, LOW);
+  analogWrite(DIR1, 0);
 }
 
 //helper method to calculate motor count required to extend airbrakes by angle passed in
@@ -80,6 +95,15 @@ boolean detectLaunch(){
   }
 }
 
+//launch ready state
+void padIdle(){
+  bool launchDetected = detectLaunch();
+  while(!launchDetected){
+    delay(10);
+    launchDetected = detectLaunch();
+  }
+}
+
 void setup() {
   // put your setup code here, to run once:
 
@@ -91,8 +115,8 @@ void setup() {
   else{
     Serial.println("ICM20948 is connected");
   }
-
-  
+  pinMode(PWM1, OUTPUT);
+  pinMode(DIR1, OUTPUT);
 
 }
 
@@ -200,9 +224,13 @@ void motorTest(){
       }
         
       case 2:{
+        Serial.println("Retracting");
         retractAirbrakes();
-        extendAirbrakes(1000); //TODO: Replace 1000 with full extend count
-        delay(5000);
+        Serial.println("Extending");
+        extendAirbrakes(100); //TODO: Replace 1000 with full extend count
+        Serial.println("Delaying");
+        delay(500);
+        Serial.println("Retracting");
         retractAirbrakes();
         option = 0;
         break;
@@ -210,7 +238,7 @@ void motorTest(){
         
       case 3:{
         retractAirbrakes();
-        extendAirbrakes(1000); //TODO: Replace 1000 with full extend count
+        extendAirbrakes(100); //TODO: Replace 1000 with full extend count
         option = 0;
         break;
       }
@@ -300,14 +328,7 @@ void sensorTest(){
 }
 
 
-//launch ready state
-void padIdle(){
-  bool launchDetected = detectLaunch();
-  while(!launchDetected){
-    delay(10);
-    launchDetected = detectLaunch();
-  }
-  }
+
 
 
 
