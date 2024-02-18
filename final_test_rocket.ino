@@ -3,15 +3,15 @@
 #include <ICM20948_WE.h>
 #include <Adafruit_DPS310.h>
 #include <Encoder.h>
-#include <LittleFS.h>
+//#include <LittleFS.h>
 
 //I2C addresses for barometer and IMU
 #define DPS310_ADDR 0x77
 #define ICM20948_ADDR 0x69
 
-#define FILE_SIZE_512K 524288L
-#define FILE_SIZE_1M   1048576L
-#define PROG_FLASH_SIZE 1024 * 1024 * 1
+//#define FILE_SIZE_512K 524288L
+//#define FILE_SIZE_1M   1048576L
+//#define PROG_FLASH_SIZE 1024 * 1024 * 1
 
 //initialise the IMU
 ICM20948_WE myIMU = ICM20948_WE(ICM20948_ADDR);
@@ -48,61 +48,13 @@ float accelerations[] = {0, 0, 0, 0, 0}; //stores recent acceleration values
 boolean isCalibrated = false; //boolean flag to prevent action before calibration completes
 
 
-//fully retracts airbrakes from any position
-void retractAirbrakes(){
-  
-  while(myEnc.read() > 0){
-    Serial.println(myEnc.read());
-    Serial.println("got here");
-    digitalWrite(DIR1, LOW);
-    analogWrite(PWM1, 255);
-  }
-  digitalWrite(DIR1, LOW);
-  analogWrite(PWM1, 0);
-  
-}
+boolean burnoutDetected = false;
+boolean launchDetected = false;
+boolean touchdownDetected = false;
 
-//helper method to extend airbrakes
-void extendAirbrakes(int target){
-  while(myEnc.read() < target){
-    digitalWrite(PWM1, LOW);
-    analogWrite(DIR1, 255);
-    Serial.println(myEnc.read());
-  }
-  digitalWrite(PWM1, LOW);
-  analogWrite(DIR1, 0);
-}
 
-//helper method to calculate motor count required to extend airbrakes by angle passed in
-int calculateTargetCount(float angle){
-  return 0;
-}
 
-boolean detectLaunch(){
-  boolean launch = false;
-  
-  while(!launch){
-    myIMU.readSensor();
-    xyzFloat accRaw = myIMU.getAccRawValues();
-    xyzFloat corrAccRaw = myIMU.getCorrectedAccRawValues();
-    xyzFloat gVal = myIMU.getGValues();
-    float resultantG = myIMU.getResultantG(gVal);
-    if(abs(resultantG) > 3.0){
-      launch = true;
-    }
-    return launch;
-    
-  }
-}
 
-//launch ready state
-void padIdle(){
-  bool launchDetected = detectLaunch();
-  while(!launchDetected){
-    delay(10);
-    launchDetected = detectLaunch();
-  }
-}
 
 void setup() {
   // put your setup code here, to run once:
@@ -219,7 +171,7 @@ void motorTest(){
           }
         }
 
-        extendAirbrakes(calculateTargetCount(deployAngle));
+        extendAirbrakes(calculateTargetCount(deployAngle), 0);
         break;
       }
         
@@ -335,10 +287,9 @@ void padIdle(){
     delay(10);
     launchDetected = detectLaunch();
   }
-  timeStart = micros();
-  burnoutDetected = false;
+  int timeStart = micros();
   while(!burnoutDetected){
-    currentTime = micros();
+    int currentTime = micros();
     //LOG DATA HERE: TO BE IMPLEMENTED
     currentTime = micros();
     if(currentTime-timeStart > 1000000){
@@ -349,8 +300,11 @@ void padIdle(){
     }
   }
 
-  burnoutTime = micros();
-  
+  delay(1000);
+  extendAirbrakes(400, timeStart);
+  delay(1000);
+  retractAirbrakes(timeStart);
+
   
   
    
@@ -368,7 +322,7 @@ int calculateTargetCount(float angle){
 //helper method to retract airbrakes
 void retractAirbrakes(int startTime){
   
-  while(myEnc.read() > 0 || digitalRead(limitSwitchPin)==LOW{
+  while(digitalRead(limitSwitchPin)==LOW){
     Serial.println(myEnc.read());
     Serial.println("got here");
     recordData();
@@ -385,7 +339,7 @@ void extendAirbrakes(int target, int startTime){
   while(myEnc.read() < target){
     digitalWrite(PWM1, LOW);
     analogWrite(DIR1, 255);
-    recordData();
+    recordData(); //TODO: Pass in startTime eventually
     Serial.println(myEnc.read());
   }
   digitalWrite(PWM1, LOW);
