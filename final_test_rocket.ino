@@ -29,7 +29,7 @@ Adafruit_Sensor *dps_pressure = dps.getPressureSensor();
 #define encoderPinB 23
 
 //define limit switch
-#define limitSwitchPin 10
+#define limitSwitchPin 9
 
 Encoder myEnc(encoderPinA, encoderPinB);
 //OBSOLETE WITH NEW ENCODER LIBRARY
@@ -215,7 +215,7 @@ void motorTest(){
         while(deployAngle == 0){
           deployAngle = Serial.parseFloat();
           if(deployAngle <= 0 || deployAngle > 56){ //TODO: Replace 56 with full extend angle
-            Serial.println("Invalid Input. Please enter a floating point number greater than zero and less than or equal to ('INSERT TRUE MAX ANGLE HERE).");
+            Serial.println("Invalid Input. Please enter a floating point number greater than zero and less than or equal to (INSERT TRUE MAX ANGLE HERE).");
           }
         }
 
@@ -225,26 +225,26 @@ void motorTest(){
         
       case 2:{
         Serial.println("Retracting");
-        retractAirbrakes();
+        retractAirbrakes(0);
         Serial.println("Extending");
-        extendAirbrakes(100); //TODO: Replace 1000 with full extend count
+        extendAirbrakes(100,0); //TODO: Replace 1000 with full extend count
         Serial.println("Delaying");
         delay(500);
         Serial.println("Retracting");
-        retractAirbrakes();
+        retractAirbrakes(0);
         option = 0;
         break;
       }
         
       case 3:{
-        retractAirbrakes();
-        extendAirbrakes(100); //TODO: Replace 1000 with full extend count
+        retractAirbrakes(0);
+        extendAirbrakes(100,0); //TODO: Replace 1000 with full extend count
         option = 0;
         break;
       }
         
       case 4: {
-        retractAirbrakes();
+        retractAirbrakes(0);
         option = 0;
         break;
       }
@@ -328,14 +328,97 @@ void sensorTest(){
 }
 
 
+//launch ready state
+void padIdle(){
+  launchDetected = detectLaunch();
+  while(!launchDetected){
+    delay(10);
+    launchDetected = detectLaunch();
+  }
+  timeStart = micros();
+  burnoutDetected = false;
+  while(!burnoutDetected){
+    currentTime = micros();
+    //LOG DATA HERE: TO BE IMPLEMENTED
+    currentTime = micros();
+    if(currentTime-timeStart > 1000000){
+      burnoutDetected = detectBurnout();
+      if(currentTime-timeStart > 1800000){
+        burnoutDetected = true;
+      }
+    }
+  }
+
+  burnoutTime = micros();
+  
+  
+  
+   
+  }
+
+  
 
 
+//helper method to calculate motor count required to extend airbrakes by angle passed in
+int calculateTargetCount(float angle){
+  return 0; //NOT YET IMPLEMENTED, LOWER PRIORITY
+}
 
 
+//helper method to retract airbrakes
+void retractAirbrakes(int startTime){
+  
+  while(myEnc.read() > 0 || digitalRead(limitSwitchPin)==LOW{
+    Serial.println(myEnc.read());
+    Serial.println("got here");
+    recordData();
+    digitalWrite(DIR1, LOW);
+    analogWrite(PWM1, 255);
+  }
+  digitalWrite(DIR1, LOW);
+  analogWrite(PWM1, 0);
+  
+}
 
+//helper method to extend airbrakes
+void extendAirbrakes(int target, int startTime){
+  while(myEnc.read() < target){
+    digitalWrite(PWM1, LOW);
+    analogWrite(DIR1, 255);
+    recordData();
+    Serial.println(myEnc.read());
+  }
+  digitalWrite(PWM1, LOW);
+  analogWrite(DIR1, 0);
+}
 
+boolean detectLaunch(){
+  boolean launch = false;
+  myIMU.readSensor();
+  xyzFloat accRaw = myIMU.getAccRawValues();
+  xyzFloat corrAccRaw = myIMU.getCorrectedAccRawValues();
+  xyzFloat gVal = myIMU.getGValues();
+  float resultantG = myIMU.getResultantG(gVal);
+  if(abs(resultantG) > 3.0){
+    launch = true;
+  }
+  return launch;
+    
+}
 
+boolean detectBurnout(){
+  boolean burnout = false;
+  myIMU.readSensor();
+  xyzFloat accRaw = myIMU.getAccRawValues();
+  xyzFloat corrAccRaw = myIMU.getCorrectedAccRawValues();
+  xyzFloat gVal = myIMU.getGValues();
+  float resultantG = myIMU.getResultantG(gVal);
+  if(abs(resultantG) < 4){
+    burnout = true;
+    }
+  return burnout;
+}
 
-
-
-
+void recordData(){
+  //TO BE IMPLEMENTED
+}
