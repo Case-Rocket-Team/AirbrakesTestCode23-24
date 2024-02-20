@@ -3,7 +3,7 @@
 #include <ICM20948_WE.h>
 #include <Adafruit_DPS310.h>
 #include <Encoder.h>
-#include <SerialFlash.h>
+//#include <LittleFS.h>
 
 //I2C addresses for barometer and IMU
 #define DPS310_ADDR 0x77
@@ -42,6 +42,8 @@ Encoder myEnc(encoderPinA, encoderPinB);
 
 float seaLevelPressure = 0; //current pressure at sea level, to be defined by user
 
+float altitudes[] = {0, 0, 0, 0, 0}; //stores recent altitudes
+float accelerations[] = {0, 0, 0, 0, 0}; //stores recent acceleration values
 
 boolean isCalibrated = false; //boolean flag to prevent action before calibration completes
 
