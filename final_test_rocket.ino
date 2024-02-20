@@ -3,7 +3,8 @@
 #include <ICM20948_WE.h>
 #include <Adafruit_DPS310.h>
 #include <Encoder.h>
-//#include <LittleFS.h>
+#include <SPIMemory.h>
+#include <SD.h>
 
 //I2C addresses for barometer and IMU
 #define DPS310_ADDR 0x77
@@ -42,7 +43,6 @@ Encoder myEnc(encoderPinA, encoderPinB);
 
 float seaLevelPressure = 0; //current pressure at sea level, to be defined by user
 
-
 boolean isCalibrated = false; //boolean flag to prevent action before calibration completes
 
 unsigned int startFlashAddr, curFlashAddr = 0;
@@ -77,9 +77,9 @@ bool logToFlash(){
   return flash.writeAnything(curFlashAddr, oneRecord);
 }
 
-bool dumpToSD(){
+void dumpToSD(){
   File file = SD.open("");
-  return file.writeAnything(curFlashAddr, oneRecord);
+  //return file.writeAnything(curFlashAddr, oneRecord);
 }
 
 void setup() {
@@ -308,20 +308,20 @@ void sensorTest(){
 
 //launch ready state
 void padIdle(){
-  launchDetected = detectLaunch();
-  while(!launchDetected){
+  oneRecord.launch = detectLaunch();
+  while(!oneRecord.launch){
     delay(10);
-    launchDetected = detectLaunch();
+    oneRecord.launch = detectLaunch();
   }
   int timeStart = micros();
-  while(!burnoutDetected){
+  while(!oneRecord.burnout){
     int currentTime = micros();
     //LOG DATA HERE: TO BE IMPLEMENTED
     currentTime = micros();
     if(currentTime-timeStart > 1000000){
-      burnoutDetected = detectBurnout();
+      oneRecord.burnout = detectBurnout();
       if(currentTime-timeStart > 1800000){
-        burnoutDetected = true;
+        oneRecord.burnout = true;
       }
     }
   }
@@ -330,9 +330,6 @@ void padIdle(){
   extendAirbrakes(400, timeStart);
   delay(1000);
   retractAirbrakes(timeStart);
-
-  
-  
    
   }
 
