@@ -42,19 +42,45 @@ Encoder myEnc(encoderPinA, encoderPinB);
 
 float seaLevelPressure = 0; //current pressure at sea level, to be defined by user
 
-float altitudes[] = {0, 0, 0, 0, 0}; //stores recent altitudes
-float accelerations[] = {0, 0, 0, 0, 0}; //stores recent acceleration values
 
 boolean isCalibrated = false; //boolean flag to prevent action before calibration completes
 
+unsigned int startFlashAddr, curFlashAddr = 0;
 
-boolean burnoutDetected = false;
-boolean launchDetected = false;
-boolean touchdownDetected = false;
+SPIFlash flash;
 
+struct dataList {
+  uint32_t recordNumber;
+  uint32_t timeStamp;
+  float bmpTemperature;
+  float imuTemperature;
+  float pressure;
+  float accelX;
+  float accelY;
+  float accelZ;
+  float resAcceleration;
+  float altitude;
+  float magValueX;
+  float magValueY;
+  float magValueZ;
+  float gyrX;
+  float gyrY;
+  float gyrZ;
+  bool launch;
+  bool burnout;
+  bool extending;
+  bool retracting;
+  bool touchdown;
+} oneRecord;
 
+bool logToFlash(){
+  return flash.writeAnything(curFlashAddr, oneRecord);
+}
 
-
+bool dumpToSD(){
+  File file = SD.open("");
+  return file.writeAnything(curFlashAddr, oneRecord);
+}
 
 void setup() {
   // put your setup code here, to run once:
