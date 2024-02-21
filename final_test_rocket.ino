@@ -74,7 +74,9 @@ struct dataList {
 } oneRecord;
 
 bool logToFlash(){
-  return flash.writeAnything(curFlashAddr, oneRecord);
+  bool res = flash.writeAnything(curFlashAddr, oneRecord);
+  if(res) curFlashAddr += sizeof(oneRecord);
+  return res;
 }
 
 void dumpToSD(){
