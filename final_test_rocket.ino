@@ -391,7 +391,3 @@ boolean detectBurnout(){
     }
   return burnout;
 }
-
-void recordData(){
-  //TO BE IMPLEMENTED
-}
