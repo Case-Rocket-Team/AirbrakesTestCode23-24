@@ -88,10 +88,10 @@ void setup() {
   Wire.begin();
   Serial.begin(115200);
   if(!myIMU.init()){
-    Serial.println("ICM20948 does not respond");
+    Serial.println(F("ICM20948 does not respond"));
   }
   else{
-    Serial.println("ICM20948 is connected");
+    Serial.println(F("ICM20948 is connected"));
   }
   pinMode(PWM1, OUTPUT);
   pinMode(DIR1, OUTPUT);
@@ -103,7 +103,7 @@ void loop() {
   //main menu
   
   int option = 0;
-  Serial.println("Please enter the number that corresponds with the menu option you would like to choose.\n 1. Calibrate \n 2. Test Motor \n 3. Test Sensors \n 4. Pad-Idle Mode");
+  Serial.println(F("Please enter the number that corresponds with the menu option you would like to choose.\n 1. Calibrate \n 2. Test Motor \n 3. Test Sensors \n 4. Pad-Idle Mode"));
   
   while(option == 0){
     option = Serial.parseInt();
@@ -118,7 +118,7 @@ void loop() {
           motorTest();
         }
         else{
-          Serial.println("Sensor and motor calibration not completed. Please calibrate and try again.");
+          Serial.println(F("Sensor and motor calibration not completed. Please calibrate and try again."));
           option = 0;
         }
         break;
@@ -128,7 +128,7 @@ void loop() {
           sensorTest();
         }
         else{
-          Serial.println("Sensor and motor calibration not completed. Please calibrate and try again.");
+          Serial.println(F("Sensor and motor calibration not completed. Please calibrate and try again."));
           option = 0;
         }
         break;
@@ -138,13 +138,13 @@ void loop() {
           padIdle();
         }
         else{
-          Serial.println("Sensor and motor calibration not completed. Please calibrate and try again.");
+          Serial.println(F("Sensor and motor calibration not completed. Please calibrate and try again."));
           option = 0;
         }
         break;
         
       default:
-        Serial.println("Invalid Input. Please try again.");
+        Serial.println(F("Invalid Input. Please try again."));
         option = 0;
       
     }
@@ -154,24 +154,20 @@ void loop() {
 
 //calibrates sensors and motor before use
 void calibrate(){
-  Serial.println("Calibrating IMU...");
+  Serial.println(F("Calibrating IMU..."));
   delay(1000);
   myIMU.autoOffsets();
   myIMU.setAccRange(ICM20948_ACC_RANGE_16G);
   myIMU.setAccDLPF(ICM20948_DLPF_6);
   myIMU.setAccSampleRateDivider(10);
-  Serial.println("IMU Calibrated");
 
-  Serial.println("Please enter the current pressure at sea level in hPa.");
+  Serial.println(F("Please enter the current pressure at sea level in hPa."));
   while(seaLevelPressure == 0){
     seaLevelPressure = Serial.parseFloat();
     if(seaLevelPressure == 0){
-      Serial.println("Invalid Input. Please enter a floating point number greater than zero.");
+      Serial.println(F("Invalid Input. Please enter a floating point number greater than zero."));
     }
   }
-  
-
-  
   //TODO: Motor calibration??? DPS Calibration???
  
   isCalibrated = true; 
@@ -181,19 +177,19 @@ void calibrate(){
 //allows user to extend airbrakes by any angle 
 void motorTest(){
   int option = 0;
-  Serial.println("Please enter the number that corresponds with the menu option you would like to choose. \n 1. User Input Mode \n 2. One Cycle \n 3. Full Deploy \n 4. Retract \n 5.Return to Main Menu");
+  Serial.println(F("Please enter the number that corresponds with the menu option you would like to choose. \n 1. User Input Mode \n 2. One Cycle \n 3. Full Deploy \n 4. Retract \n 5.Return to Main Menu"));
 
   while(option == 0){
     option = Serial.parseInt();
     switch(option){
       
       case 1: {
-        Serial.println("Please enter the angle you wish to deploy to.");
+        Serial.println(F("Please enter the angle you wish to deploy to."));
         float deployAngle = 0.0;
         while(deployAngle == 0){
           deployAngle = Serial.parseFloat();
           if(deployAngle <= 0 || deployAngle > 56){ //TODO: Replace 56 with full extend angle
-            Serial.println("Invalid Input. Please enter a floating point number greater than zero and less than or equal to (INSERT TRUE MAX ANGLE HERE).");
+            Serial.println(F("Invalid Input. Please enter a floating point number greater than zero and less than or equal to (INSERT TRUE MAX ANGLE HERE)."));
           }
         }
 
@@ -202,13 +198,13 @@ void motorTest(){
       }
         
       case 2:{
-        Serial.println("Retracting");
+        Serial.println(F("Retracting"));
         retractAirbrakes(0);
-        Serial.println("Extending");
+        Serial.println(F("Extending"));
         extendAirbrakes(100,0); //TODO: Replace 1000 with full extend count
-        Serial.println("Delaying");
+        Serial.println(F("Delaying"));
         delay(500);
-        Serial.println("Retracting");
+        Serial.println(F("Retracting"));
         retractAirbrakes(0);
         option = 0;
         break;
@@ -231,7 +227,7 @@ void motorTest(){
         break;
       }
       default:
-        Serial.println("Invalid Input. Please try again.");
+        Serial.println(F("Invalid Input. Please try again."));
         option = 0;
       
     }
@@ -243,14 +239,14 @@ void motorTest(){
 
 //allows user to receive sensor data
 void sensorTest(){
-  Serial.println("CURRENT DATA:");
-  Serial.println("BAROMETER (DPS310) DATA:");
+  Serial.println(F("CURRENT DATA:"));
+  Serial.println(F("BAROMETER (DPS310) DATA:"));
   sensors_event_t temp_event, pressure_event;
   if (dps.temperatureAvailable()) {
     dps_temp->getEvent(&temp_event);
     Serial.print(F("Temperature = "));
     Serial.print(temp_event.temperature);
-    Serial.println(" *C");
+    Serial.println(F(" *C"));
     Serial.println();
   }
 
@@ -258,18 +254,18 @@ void sensorTest(){
     dps_pressure->getEvent(&pressure_event);
     Serial.print(F("Pressure = "));
     Serial.print(pressure_event.pressure);
-    Serial.println(" hPa");
+    Serial.println(F(" hPa"));
     Serial.println();
   }
 
-  Serial.print("Altitude: ");
+  Serial.print(F("Altitude: "));
   Serial.print(dps.readAltitude(seaLevelPressure));
   Serial.println();
   
   
 
-  Serial.println("---------------");
-  Serial.println("IMU (ICM20948) DATA:");
+  Serial.println(F("---------------"));
+  Serial.println(F("IMU (ICM20948) DATA:"));
 
   myIMU.readSensor();
   xyzFloat accRaw = myIMU.getAccRawValues();
@@ -277,23 +273,23 @@ void sensorTest(){
   xyzFloat gVal = myIMU.getGValues();
   float resultantG = myIMU.getResultantG(gVal);
   
-  Serial.println("Raw acceleration values (x,y,z):");
+  Serial.println(F("Raw acceleration values (x,y,z):"));
   Serial.print(accRaw.x);
   Serial.print("   ");
   Serial.print(accRaw.y);
   Serial.print("   ");
   Serial.println(accRaw.z);
 
-  Serial.println("Corrected raw acceleration values (x,y,z):");
+  Serial.println(F("Corrected raw acceleration values (x,y,z):"));
   Serial.print(corrAccRaw.x);
   Serial.print("   ");
   Serial.print(corrAccRaw.y);
   Serial.print("   ");
   Serial.println(corrAccRaw.z);
 
-  Serial.println("g-values (x,y,z):");
+  Serial.println(F("g-values (x,y,z):"));
   Serial.print(gVal.x);
-  Serial.print("   ");
+  Serial.print(F("   "));
   Serial.print(gVal.y);
   Serial.print("   ");
   Serial.println(gVal.z);
@@ -301,7 +297,7 @@ void sensorTest(){
   Serial.print("Resultant g: ");
   Serial.println(resultantG);
 
-  Serial.println("Magnetic field data (x,y,z)");
+  Serial.println(F("Magnetic field data (x,y,z)"));
   
 }
 
@@ -347,7 +343,7 @@ void retractAirbrakes(int startTime){
   
   while(digitalRead(limitSwitchPin)==LOW){
     Serial.println(myEnc.read());
-    Serial.println("got here");
+    Serial.println(F("got here"));
     recordData();
     digitalWrite(DIR1, LOW);
     analogWrite(PWM1, 255);
