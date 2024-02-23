@@ -87,26 +87,26 @@ void dumpToSD(){
   if(file) {
     unsigned int _addr = 0;
     while(_addr < curFlashAddr){
-      structToCSV(_addr);
+      structToCSV(_addr, file);
       _addr += sizeof(dataList);
     }
   }
 }
 
-void structToCSV(unsigned int _addr){
-  file.print(flash.readWord(_addr))
+void structToCSV(unsigned int _addr, File fileName){
+  fileName.print(flash.readWord(_addr));
   _addr += 2;
-  file.print(flash.readULong(_addr))
+  fileName.print(flash.readULong(_addr));
   _addr += 4;
   // loop over the 14 consecutive floats in the data struct
   for(int i = 0; i < 14; i++){
-    file.print(flash.readFloat(_addr))
+    fileName.print(flash.readFloat(_addr));
     _addr += 4;
   }
   for(int i = 0; i < 5; i++){
     bool data;
-    flash.readAnything(_addr, &data)
-    file.print(data);
+    flash.readAnything(_addr, data);
+    fileName.print(data);
     _addr += 1;
 
   }
