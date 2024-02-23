@@ -50,7 +50,7 @@ unsigned int startFlashAddr, curFlashAddr = 0;
 SPIFlash flash;
 
 struct dataList {
-  uint32_t recordNumber;
+  uint16_t recordNumber;
   uint32_t timeStamp;
   float bmpTemperature;
   float imuTemperature;
@@ -79,9 +79,37 @@ bool logToFlash(){
   return res;
 }
 
+// Dumps all data written to the flash chip over the lifetime of the program to 
+// the SD card. IMPORTANT: This function is meant to be called only once, at or
+// near the end of execution.
 void dumpToSD(){
-  File file = SD.open("");
-  //return file.writeAnything(curFlashAddr, oneRecord);
+  File file = SD.open("data.csv");
+  if(file) {
+    unsigned int _addr = 0;
+    while(_addr < curFlashAddr){
+      structToCSV(_addr);
+      _addr += sizeof(dataList);
+    }
+  }
+}
+
+void structToCSV(unsigned int _addr){
+  file.print(flash.readWord(_addr))
+  _addr += 2;
+  file.print(flash.readULong(_addr))
+  _addr += 4;
+  // loop over the 14 consecutive floats in the data struct
+  for(int i = 0; i < 14; i++){
+    file.print(flash.readFloat(_addr))
+    _addr += 4;
+  }
+  for(int i = 0; i < 5; i++){
+    bool data;
+    flash.readAnything(_addr, &data)
+    file.print(data);
+    _addr += 1;
+
+  }
 }
 
 void setup() {
@@ -392,4 +420,8 @@ boolean detectBurnout(){
     burnout = true;
     }
   return burnout;
+}
+
+void recordData(){
+  
 }
