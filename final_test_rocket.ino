@@ -52,7 +52,7 @@ SPIFlash flash;
 struct dataList {
   uint16_t recordNumber;
   uint32_t timeStamp;
-  float bmpTemperature;
+  float dpsTemperature;
   float imuTemperature;
   float pressure;
   float accelX;
@@ -86,7 +86,7 @@ void dumpToSD(){
   File file = SD.open("data.csv");
   if(file) {
     unsigned int _addr = 0;
-    while(_addr < curFlashAddr){
+    while(_addr < curFlashAddr, file){
       structToCSV(_addr, file);
       _addr += sizeof(dataList);
     }
@@ -340,10 +340,12 @@ void padIdle(){
     oneRecord.launch = detectLaunch();
   }
   int timeStart = micros();
+  int currentTime = micros();
   while(!oneRecord.burnout){
-    int currentTime = micros();
     //LOG DATA HERE: TO BE IMPLEMENTED
     currentTime = micros();
+    recordData(timeStart, currentTime);
+    logToFlash();
     if(currentTime-timeStart > 1000000){
       oneRecord.burnout = detectBurnout();
       if(currentTime-timeStart > 1800000){
@@ -353,9 +355,31 @@ void padIdle(){
   }
 
   delay(1000);
+  oneRecord.extending = true;
   extendAirbrakes(400, timeStart);
   delay(1000);
+  oneRecord.retracting = true;
   retractAirbrakes(timeStart);
+  while(!oneRecord.touchdown){
+    oneRecord.touchdown = detectTouchdown();
+    currentTime = micros();
+    recordData(timeStart, currentTime);
+    logToFlash();
+  }
+  delay(10000);
+  dumpToSD();
+  int option = 0;
+  Serial.println("PLEASE ENTER 1234567890 ONCE YOU HAVE EJECTED THE SD CARD AND COMPLETED OPERATIONS.");
+  while(option == 0){
+    option = Serial.parseInt();
+    if(option == 1234567890){
+      option = 1;
+    }
+    else{
+      option = 0;
+    }
+  }
+  
    
   }
 
@@ -373,8 +397,8 @@ void retractAirbrakes(int startTime){
   
   while(digitalRead(limitSwitchPin)==LOW){
     Serial.println(myEnc.read());
-    Serial.println(F("got here"));
-    recordData();
+    recordData(startTime, micros());
+    logToFlash();
     digitalWrite(DIR1, LOW);
     analogWrite(PWM1, 255);
   }
@@ -388,7 +412,8 @@ void extendAirbrakes(int target, int startTime){
   while(myEnc.read() < target){
     digitalWrite(PWM1, LOW);
     analogWrite(DIR1, 255);
-    recordData(); //TODO: Pass in startTime eventually
+    recordData(startTime, micros()); //TODO: Pass in startTime eventually
+    logToFlash();
     Serial.println(myEnc.read());
   }
   digitalWrite(PWM1, LOW);
@@ -398,11 +423,7 @@ void extendAirbrakes(int target, int startTime){
 boolean detectLaunch(){
   boolean launch = false;
   myIMU.readSensor();
-  xyzFloat accRaw = myIMU.getAccRawValues();
-  xyzFloat corrAccRaw = myIMU.getCorrectedAccRawValues();
-  xyzFloat gVal = myIMU.getGValues();
-  float resultantG = myIMU.getResultantG(gVal);
-  if(abs(resultantG) > 3.0){
+  if(abs(myIMU.getResultantG(myIMU.getGValues())) > 3.0){
     launch = true;
   }
   return launch;
@@ -412,16 +433,55 @@ boolean detectLaunch(){
 boolean detectBurnout(){
   boolean burnout = false;
   myIMU.readSensor();
-  xyzFloat accRaw = myIMU.getAccRawValues();
-  xyzFloat corrAccRaw = myIMU.getCorrectedAccRawValues();
-  xyzFloat gVal = myIMU.getGValues();
-  float resultantG = myIMU.getResultantG(gVal);
-  if(abs(resultantG) < 4){
+  if(abs(myIMU.getResultantG(myIMU.getGValues())) < 4){
     burnout = true;
     }
   return burnout;
 }
 
-void recordData(){
+boolean detectTouchdown(){
+  int ctr = 0;
+  boolean touchdown = false;
+  if(myIMU.getResultantG(myIMU.getGValues()) >=0.7 && myIMU.getResultantG(myIMU.getGValues()) <= 1.3 ){
+    while(ctr<10){
+      if((myIMU.getResultantG(myIMU.getGValues())) >=0.7 && myIMU.getResultantG(myIMU.getGValues()) <= 1.3 ){
+        ctr++;
+      }
+      else{
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
+void recordData(int startTime, int currentTime){
+  myIMU.readSensor();
+  oneRecord.recordNumber++;
+  oneRecord.timeStamp = currentTime-startTime;
+  sensors_event_t temp_event, pressure_event;
+  if (dps.temperatureAvailable()) {
+    dps_temp->getEvent(&temp_event);
+    oneRecord.dpsTemperature = temp_event.temperature;
+  }
+  if (dps.pressureAvailable()) {
+    dps_temp->getEvent(&temp_event);
+    oneRecord.dpsTemperature = temp_event.temperature;
+  }
+
+  oneRecord.accelX = myIMU.getGValues().x;
+  oneRecord.accelY = myIMU.getGValues().y;
+  oneRecord.accelZ = myIMU.getGValues().z;
+  oneRecord.resAcceleration = myIMU.getResultantG(myIMU.getGValues());
+  oneRecord.imuTemperature = myIMU.getTemperature();
+  oneRecord.magValueX = myIMU.getMagValues().x;
+  oneRecord.magValueY = myIMU.getMagValues().y;
+  oneRecord.magValueZ = myIMU.getMagValues().z;
+  oneRecord.gyrX = myIMU.getGyrValues().x;
+  oneRecord.gyrY = myIMU.getGyrValues().y;
+  oneRecord.gyrZ = myIMU.getGyrValues().z;
+  
+  
   
 }
