@@ -305,26 +305,26 @@ void sensorTest(){
   
   Serial.println(F("Raw acceleration values (x,y,z):"));
   Serial.print(accRaw.x);
-  Serial.print("   ");
+  Serial.print(F("   "));
   Serial.print(accRaw.y);
-  Serial.print("   ");
+  Serial.print(F("   "));
   Serial.println(accRaw.z);
 
   Serial.println(F("Corrected raw acceleration values (x,y,z):"));
   Serial.print(corrAccRaw.x);
-  Serial.print("   ");
+  Serial.print(F("   "));
   Serial.print(corrAccRaw.y);
-  Serial.print("   ");
+  Serial.print(F("   "));
   Serial.println(corrAccRaw.z);
 
   Serial.println(F("g-values (x,y,z):"));
   Serial.print(gVal.x);
   Serial.print(F("   "));
   Serial.print(gVal.y);
-  Serial.print("   ");
+  Serial.print(F("   "));
   Serial.println(gVal.z);
 
-  Serial.print("Resultant g: ");
+  Serial.print(F("Resultant g: "));
   Serial.println(resultantG);
 
   Serial.println(F("Magnetic field data (x,y,z)"));
@@ -369,7 +369,7 @@ void padIdle(){
   delay(10000);
   dumpToSD();
   int option = 0;
-  Serial.println("PLEASE ENTER 1234567890 ONCE YOU HAVE EJECTED THE SD CARD AND COMPLETED OPERATIONS.");
+  Serial.println(F("PLEASE ENTER 1234567890 ONCE YOU HAVE EJECTED THE SD CARD AND COMPLETED OPERATIONS."));
   while(option == 0){
     option = Serial.parseInt();
     if(option == 1234567890){
@@ -442,7 +442,7 @@ boolean detectBurnout(){
 boolean detectTouchdown(){
   int ctr = 0;
   boolean touchdown = false;
-  if(myIMU.getResultantG(myIMU.getGValues()) >=0.7 && myIMU.getResultantG(myIMU.getGValues()) <= 1.3 ){
+  if(oneRecord.resAcceleration >=0.7 && oneRecord.resAcceleration <= 1.3 ){
     while(ctr<10){
       if((myIMU.getResultantG(myIMU.getGValues())) >=0.7 && myIMU.getResultantG(myIMU.getGValues()) <= 1.3 ){
         ctr++;
@@ -466,8 +466,8 @@ void recordData(int startTime, int currentTime){
     oneRecord.dpsTemperature = temp_event.temperature;
   }
   if (dps.pressureAvailable()) {
-    dps_temp->getEvent(&temp_event);
-    oneRecord.dpsTemperature = temp_event.temperature;
+    dps_pressure->getEvent(&pressure_event);
+    oneRecord.pressure = pressure_event.pressure;
   }
 
   oneRecord.accelX = myIMU.getGValues().x;
@@ -481,7 +481,4 @@ void recordData(int startTime, int currentTime){
   oneRecord.gyrX = myIMU.getGyrValues().x;
   oneRecord.gyrY = myIMU.getGyrValues().y;
   oneRecord.gyrZ = myIMU.getGyrValues().z;
-  
-  
-  
 }
