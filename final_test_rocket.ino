@@ -24,8 +24,8 @@ Adafruit_Sensor *dps_pressure = dps.getPressureSensor();
 
 
 //define motor and encoder pins
-#define DIR1 37
-#define PWM1 36
+#define DIR1 3
+#define PWM1 5
 #define encoderPinA 22
 #define encoderPinB 23
 
@@ -43,7 +43,7 @@ Encoder myEnc(encoderPinA, encoderPinB);
 
 float seaLevelPressure = 0; //current pressure at sea level, to be defined by user
 
-boolean isCalibrated = false; //boolean flag to prevent action before calibration completes
+boolean isCalibrated = true; //boolean flag to prevent action before calibration completes
 
 unsigned int startFlashAddr, curFlashAddr = 0;
 
