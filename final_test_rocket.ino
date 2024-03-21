@@ -30,22 +30,29 @@ Adafruit_Sensor *dps_pressure = dps.getPressureSensor();
 #define encoderPinB 7
 
 //define limit switch
-#define limitSwitchPin 9
+#define limitSwitchPin 8
 
+#define SDChipSelect 9
+#define flashChipSelect 10
+
+//initialise encoder
 Encoder myEnc(encoderPinA, encoderPinB);
-//OBSOLETE WITH NEW ENCODER LIBRARY
+
+
+//***OBSOLETE WITH NEW ENCODER LIBRARY***
 //create variables to help with PID controller
 //volatile long encoderCount = 0; 
 //long previousTime = 0;
 //float ePrevious = 0;
 //float eIntegral = 0;
 //const int target = 1000;
+//***OBSOLETE WITH NEW ENCODER LIBRARY***
 
 float seaLevelPressure = 0; //current pressure at sea level, to be defined by user
 
 boolean isCalibrated = true; //boolean flag to prevent action before calibration completes
 
-unsigned int startFlashAddr, curFlashAddr = 0;
+unsigned int startFlashAddr, curFlashAddr = 0; //counters to track current flash addresses being written to
 
 SPIFlash flash;
 
@@ -117,6 +124,8 @@ void setup() {
 
   Wire.begin();
   Serial.begin(115200);
+  SD.begin(SDChipSelect);
+  flash.begin(flashChipSelect);
   if(!myIMU.init()){
     Serial.println(F("ICM20948 does not respond"));
   }
@@ -342,7 +351,6 @@ void padIdle(){
   int timeStart = micros();
   int currentTime = micros();
   while(!oneRecord.burnout){
-    //LOG DATA HERE: TO BE IMPLEMENTED
     currentTime = micros();
     recordData(timeStart, currentTime);
     logToFlash();
@@ -412,7 +420,7 @@ void extendAirbrakes(int target, int startTime){
   while(myEnc.read() < target){
     digitalWrite(PWM1, LOW);
     analogWrite(DIR1, 255);
-    recordData(startTime, micros()); //TODO: Pass in startTime eventually
+    recordData(startTime, micros());
     logToFlash();
     Serial.println(myEnc.read());
   }
