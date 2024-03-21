@@ -26,8 +26,8 @@ Adafruit_Sensor *dps_pressure = dps.getPressureSensor();
 //define motor and encoder pins
 #define DIR1 3
 #define PWM1 5
-#define encoderPinA 22
-#define encoderPinB 23
+#define encoderPinA 6
+#define encoderPinB 7
 
 //define limit switch
 #define limitSwitchPin 9
