@@ -200,7 +200,7 @@ void calibrate(){
   myIMU.setAccDLPF(ICM20948_DLPF_6);
   myIMU.setAccSampleRateDivider(10);
 
-  Serial.println(F("Please enter the current pressure at sea level in hPa."));
+  Serial.println(F("Please enter the current pressure in hPa."));
   while(seaLevelPressure == 0){
     seaLevelPressure = Serial.parseFloat();
     if(seaLevelPressure == 0){
