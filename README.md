@@ -18,3 +18,8 @@ Pressure: hectoPascals
 
 Altitude: Meters
 
+
+<h1>***Usage:***</h1>
+
+*UPON STARTUP*
+
