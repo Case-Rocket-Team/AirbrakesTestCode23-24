@@ -80,6 +80,7 @@ struct dataList {
   bool touchdown;
 } oneRecord;
 
+// Writes the current value of the datalist struct to the flash chip.
 bool logToFlash(){
   bool res = flash.writeAnything(curFlashAddr, oneRecord);
   if(res) curFlashAddr += sizeof(oneRecord);
@@ -100,6 +101,10 @@ void dumpToSD(){
   }
 }
 
+// A utility function for iteratively entering all the data from a datalist struct
+// into a file (passed in as fileName) at address _addr.
+// IMPORTANT: Make sure that at least 67 bytes of memory in the flash chip are available
+// from _addr counting upwards, to prevent a potential out-of-bounds error.
 void structToCSV(unsigned int _addr, File fileName){
   fileName.print(flash.readWord(_addr));
   _addr += 2;
@@ -120,8 +125,6 @@ void structToCSV(unsigned int _addr, File fileName){
 }
 
 void setup() {
-  // put your setup code here, to run once:
-
   Wire.begin();
   Serial.begin(115200);
   SD.begin(SDChipSelect);
@@ -276,7 +279,7 @@ void motorTest(){
 }
 
 
-//allows user to receive sensor data
+// Performs a simple test of DPS and IMU.
 void sensorTest(){
   Serial.println(F("CURRENT DATA:"));
   Serial.println(F("BAROMETER (DPS310) DATA:"));
@@ -341,7 +344,7 @@ void sensorTest(){
 }
 
 
-//launch ready state
+// Puts airbrake computer in a launch ready state.
 void padIdle(){
   oneRecord.launch = detectLaunch();
   while(!oneRecord.launch){
@@ -389,18 +392,19 @@ void padIdle(){
   }
   
    
-  }
+}
 
   
 
 
-//helper method to calculate motor count required to extend airbrakes by angle passed in
+// Helper method to calculate motor count required to extend airbrakes from angle parameter
 int calculateTargetCount(float angle){
   return 0; //NOT YET IMPLEMENTED, LOWER PRIORITY
 }
 
 
-//helper method to retract airbrakes
+// Retracts the airbrakes until the limit switch is triggered while logging
+// to flash.
 void retractAirbrakes(int startTime){
   
   while(digitalRead(limitSwitchPin)==LOW){
@@ -415,7 +419,8 @@ void retractAirbrakes(int startTime){
   
 }
 
-//helper method to extend airbrakes
+// Extends the airbrakes until the inputted target value is reached by the
+// encoder while logging to flash.
 void extendAirbrakes(int target, int startTime){
   while(myEnc.read() < target){
     digitalWrite(PWM1, LOW);
@@ -428,6 +433,8 @@ void extendAirbrakes(int target, int startTime){
   analogWrite(DIR1, 0);
 }
 
+// Detects if a launch event has occurred based on accelerometer
+// readings exceeding a threshold value of 3 Gs.
 boolean detectLaunch(){
   boolean launch = false;
   myIMU.readSensor();
@@ -438,6 +445,8 @@ boolean detectLaunch(){
     
 }
 
+// Detects if a burnout event has occurred based on accelerometer
+// readings falling below a threshold value. of 4 Gs.
 boolean detectBurnout(){
   boolean burnout = false;
   myIMU.readSensor();
@@ -447,6 +456,8 @@ boolean detectBurnout(){
   return burnout;
 }
 
+// Detects touchdown by checking for 10 consecutive acceleration values
+// near 1. Returns true if touchdown detected and false otherwise.
 boolean detectTouchdown(){
   int ctr = 0;
   boolean touchdown = false;
@@ -464,6 +475,7 @@ boolean detectTouchdown(){
   return false;
 }
 
+// Updates the datalist struct with new values from sensors
 void recordData(int startTime, int currentTime){
   myIMU.readSensor();
   oneRecord.recordNumber++;
@@ -477,7 +489,6 @@ void recordData(int startTime, int currentTime){
     dps_pressure->getEvent(&pressure_event);
     oneRecord.pressure = pressure_event.pressure;
   }
-
   oneRecord.accelX = myIMU.getGValues().x;
   oneRecord.accelY = myIMU.getGValues().y;
   oneRecord.accelZ = myIMU.getGValues().z;
