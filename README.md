@@ -138,4 +138,11 @@ Remove the SD card from the SD card slot, and enter 1234567890 to confirm that y
 7. Try a different device.
 
 **AIRBRAKES ARE NOT MOVING**
-1. Make sure that 
+1. Listen to the motor and ensure it is spinning. If it is not, proceed to step 5.
+2. Make sure that the shaft has not decoupled from the motor by trying to manually turn the shaft.
+3. Make sure that the actuation rods are connected to the motor shaft with the hex screws.
+4. Make sure that the boattail is not obscuring the motor.
+5. IF MOTOR IS NOT SPINNING: Ensure that the motor driver, motor, and board are all properly connected.
+6. If they are, disconnect the motor from the motor driver, and use a 12V power supply to try to drive the motor directly.
+7. If the motor still does not spin, it is broken. Replace the motor.
+8. If the motor does spin when connected directly to power, the motor driver is broken. Replace the motor driver.
