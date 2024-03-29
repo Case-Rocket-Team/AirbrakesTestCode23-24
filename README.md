@@ -115,3 +115,27 @@ Remove the SD card from the SD card slot, and enter 1234567890 to confirm that y
 
 
 <h1>TROUBLESHOOTING</h1>
+
+**DATA FROM SENSORS SEEMS INCORRECT/CORRUPTED**
+1. Return to the Main Menu and choose option 1 for recalibration.
+2. If that does not work, reset the board by pressing the button, and see if the issue is resolved.
+3. Confirm that the affected sensor is properly connected to the Arduino. If it is not, redo its connections.
+4. If the problem continues to persist, there is likely a hardware issue. Replace the affected sensor.
+
+**CODE IS STUCK/NOT PROCEEDING AS EXPECTED**
+1. IMMEDIATELY feel the Arduino to confirm that it is not hot. If it is, *DISCONNECT THE BATTERY AND ANY COMPUTERS/OTHER DEVICES ASAP.*
+2. Reset the board by pressing the button.
+3. If the problem persists, reflash the code to the board.
+4. Check that the ICM20948 and DPS310 are properly connected to the board.
+
+**CODE IS NOT WRITING TO SERIAL**
+1. Confirm that the baud rate on your device is set to 115200.
+2. Ensure that your device is properly connected to the Arduino.
+3. Ensure that your device is detecting that the board is connected (Arduino UNO via usbmodem).
+4. Reset the code by pressing the button on the board.
+5. Reflash the code to the Arduino.
+6. Update the drivers on your device (mainly for Linux users).
+7. Try a different device.
+
+**AIRBRAKES ARE NOT MOVING**
+1. Make sure that 
