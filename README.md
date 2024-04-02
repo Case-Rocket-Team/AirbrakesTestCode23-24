@@ -34,7 +34,7 @@ Please enter the number that corresponds with the menu option you would like to 
 </i>
 
 <br/>
-Enter "1" for calibration, and do NOT touch or jostle the electronics while the calibration process is underway (unitl the main menu reappears).
+Enter "1" for calibration, and do NOT touch or jostle the electronics while the calibration process is underway (until the main menu reappears).
 
 The following message will appear:
 
