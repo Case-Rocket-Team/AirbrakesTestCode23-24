@@ -390,11 +390,12 @@ void padIdle(){
   //wait 10 seconds then dump data from flash to SD
   delay(10000);
   dumpToSD();
-  int option = 0;
+  
 
   //wait for user to confirm operations complete
-  Serial.println(F("PLEASE ENTER 1234567890 ONCE YOU HAVE EJECTED THE SD CARD AND COMPLETED OPERATIONS."));
+  int option = 0;
   while(option == 0){
+    Serial.println(F("PLEASE ENTER 1234567890 ONCE YOU HAVE EJECTED THE SD CARD AND COMPLETED OPERATIONS."));
     option = Serial.parseInt();
     if(option == 1234567890){
       option = 1;
