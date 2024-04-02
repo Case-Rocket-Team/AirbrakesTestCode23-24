@@ -38,19 +38,9 @@ Adafruit_Sensor *dps_pressure = dps.getPressureSensor();
 //initialise encoder
 Encoder myEnc(encoderPinA, encoderPinB);
 
-
-//***OBSOLETE WITH NEW ENCODER LIBRARY***
-//create variables to help with PID controller
-//volatile long encoderCount = 0; 
-//long previousTime = 0;
-//float ePrevious = 0;
-//float eIntegral = 0;
-//const int target = 1000;
-//***OBSOLETE WITH NEW ENCODER LIBRARY***
-
 float seaLevelPressure = 0; //current pressure at sea level, to be defined by user
 
-boolean isCalibrated = true; //boolean flag to prevent action before calibration completes
+boolean isCalibrated = false; //boolean flag to prevent action before calibration completes
 
 unsigned int startFlashAddr, curFlashAddr = 0; //counters to track current flash addresses being written to
 
@@ -152,7 +142,7 @@ void loop() {
      switch(option){
       
       case 1:
-        calibrate(); //required upon startup
+        calibrate(); //required upon startup, other options will be locked if not complete
         break;
         
       case 2:
@@ -198,25 +188,26 @@ void loop() {
 void calibrate(){
   Serial.println(F("Calibrating IMU..."));
   delay(1000);
+
+  //calibrate ICM20948
   myIMU.autoOffsets();
   myIMU.setAccRange(ICM20948_ACC_RANGE_16G);
   myIMU.setAccDLPF(ICM20948_DLPF_6);
   myIMU.setAccSampleRateDivider(10);
 
-  Serial.println(F("Please enter the current pressure in hPa."));
+  Serial.println(F("Please enter the current pressure in hPa.")); //prompt user for current pressure to calibrate for altitude
   while(seaLevelPressure == 0){
     seaLevelPressure = Serial.parseFloat();
     if(seaLevelPressure == 0){
       Serial.println(F("Invalid Input. Please enter a floating point number greater than zero."));
     }
   }
-  //TODO: Motor calibration??? DPS Calibration???
  
   isCalibrated = true; 
 }
 
 
-//allows user to extend airbrakes by any angle 
+//allows user to test the motor in different ways
 void motorTest(){
   int option = 0;
   Serial.println(F("Please enter the number that corresponds with the menu option you would like to choose. \n 1. User Input Mode \n 2. One Cycle \n 3. Full Deploy \n 4. Retract \n 5.Return to Main Menu"));
@@ -224,7 +215,10 @@ void motorTest(){
   while(option == 0){
     option = Serial.parseInt();
     switch(option){
-      
+
+
+      //***NOT YET IMPLEMENTED***
+      //allows user to extend airbrakes by any angle
       case 1: {
         Serial.println(F("Please enter the angle you wish to deploy to."));
         float deployAngle = 0.0;
@@ -238,7 +232,8 @@ void motorTest(){
         extendAirbrakes(calculateTargetCount(deployAngle), 0);
         break;
       }
-        
+
+      //fully extends airbrakes and then stows them to zero
       case 2:{
         Serial.println(F("Retracting"));
         retractAirbrakes(0);
@@ -251,20 +246,23 @@ void motorTest(){
         option = 0;
         break;
       }
-        
+
+      //fully extends airbrakes
       case 3:{
         retractAirbrakes(0);
         extendAirbrakes(100,0); //TODO: Replace 1000 with full extend count
         option = 0;
         break;
       }
-        
+
+      //fully retracts airbrakes
       case 4: {
         retractAirbrakes(0);
         option = 0;
         break;
       }
-        
+
+      //return to main menu
       case 5: {
         break;
       }
@@ -282,6 +280,8 @@ void motorTest(){
 // Performs a simple test of DPS and IMU.
 void sensorTest(){
   Serial.println(F("CURRENT DATA:"));
+
+  //print all values read by DPS
   Serial.println(F("BAROMETER (DPS310) DATA:"));
   sensors_event_t temp_event, pressure_event;
   if (dps.temperatureAvailable()) {
@@ -306,7 +306,10 @@ void sensorTest(){
   
   
 
+  
   Serial.println(F("---------------"));
+
+  //print all values read by IMU
   Serial.println(F("IMU (ICM20948) DATA:"));
 
   myIMU.readSensor();
@@ -344,42 +347,55 @@ void sensorTest(){
 }
 
 
-// Puts airbrake computer in a launch ready state.
+// Puts airbrakes flight computer in a launch ready state.
 void padIdle(){
-  oneRecord.launch = detectLaunch();
+
+  //wait until launch detected
+  oneRecord.launch = detectLaunch(); 
   while(!oneRecord.launch){
     delay(10);
     oneRecord.launch = detectLaunch();
   }
+
+  //begin counting time and recording data
   int timeStart = micros();
   int currentTime = micros();
+
+  //wait until burnout detected
   while(!oneRecord.burnout){
     currentTime = micros();
     recordData(timeStart, currentTime);
     logToFlash();
-    if(currentTime-timeStart > 1000000){
+    if(currentTime-timeStart > 1000000){ //lockout to prevent early burnout detection
       oneRecord.burnout = detectBurnout();
-      if(currentTime-timeStart > 1800000){
+      if(currentTime-timeStart > 1800000){ //failsafe to ensure deployment at 1.8 seconds in case of sensor failure
         oneRecord.burnout = true;
       }
     }
   }
 
+  //wait one second, deploy airbrakes, wait one second, retract airbrakes
   delay(1000);
   oneRecord.extending = true;
   extendAirbrakes(400, timeStart);
   delay(1000);
   oneRecord.retracting = true;
   retractAirbrakes(timeStart);
+
+  //wait for touchdown detected
   while(!oneRecord.touchdown){
     oneRecord.touchdown = detectTouchdown();
     currentTime = micros();
     recordData(timeStart, currentTime);
     logToFlash();
   }
+
+  //wait 10 seconds then dump data from flash to SD
   delay(10000);
   dumpToSD();
   int option = 0;
+
+  //wait for user to confirm operations complete
   Serial.println(F("PLEASE ENTER 1234567890 ONCE YOU HAVE EJECTED THE SD CARD AND COMPLETED OPERATIONS."));
   while(option == 0){
     option = Serial.parseInt();
@@ -393,9 +409,6 @@ void padIdle(){
   
    
 }
-
-  
-
 
 // Helper method to calculate motor count required to extend airbrakes from angle parameter
 int calculateTargetCount(float angle){
@@ -446,7 +459,7 @@ boolean detectLaunch(){
 }
 
 // Detects if a burnout event has occurred based on accelerometer
-// readings falling below a threshold value. of 4 Gs.
+// readings falling below a threshold value of 4 Gs.
 boolean detectBurnout(){
   boolean burnout = false;
   myIMU.readSensor();
@@ -488,7 +501,9 @@ void recordData(int startTime, int currentTime){
   if (dps.pressureAvailable()) {
     dps_pressure->getEvent(&pressure_event);
     oneRecord.pressure = pressure_event.pressure;
+    oneRecord.altitude = dps.readAltitude(seaLevelPressure);
   }
+  
   oneRecord.accelX = myIMU.getGValues().x;
   oneRecord.accelY = myIMU.getGValues().y;
   oneRecord.accelZ = myIMU.getGValues().z;
