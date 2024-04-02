@@ -134,7 +134,7 @@ Remove the SD card from the SD card slot, and enter 1234567890 to confirm that y
 3. Ensure that your device is detecting that the board is connected (Arduino UNO via usbmodem).
 4. Reset the code by pressing the button on the board.
 5. Reflash the code to the Arduino.
-6. Update the drivers on your device (mainly for Linux users).
+6. Update the drivers on your device.
 7. Try a different device.
 
 **AIRBRAKES ARE NOT MOVING**
