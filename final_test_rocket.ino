@@ -15,7 +15,7 @@
 ICM20948_WE myIMU = ICM20948_WE(ICM20948_ADDR);
 
 //initialise the barometer and its temp and pressure sensors
-Adafruit_DPS310 dps;
+Adafruit_DPS310 dps = Adafruit_DPS310(DPS310_ADDR);
 Adafruit_Sensor *dps_temp = dps.getTemperatureSensor();
 Adafruit_Sensor *dps_pressure = dps.getPressureSensor();
 
