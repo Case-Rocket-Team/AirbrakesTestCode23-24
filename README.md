@@ -19,7 +19,7 @@ Pressure: hectoPascals
 Altitude: Meters
 
 
-This code is meant to run on an Arduino UNO, with connected ICM20948 and DPS310 (for data collection) communicating over I2C protocol, as well as a flash chip and SD card communicating via SPI. It also assumes it is connected to a DC motor driver and motor encoder, both using analog pins. The pin numbers are specified at the beginning at the code. If you must change these pins, make sure to change them in the code as well.
+This code is meant to run on an Arduino UNO, with connected ICM20948 and DPS310 (for data collection) communicating over I2C protocol, as well as a flash chip and SD card communicating via SPI. It also assumes it is connected to a DC motor driver using analog pins. The pin numbers are specified at the beginning at the code. If you must change these pins, make sure to change them in the code as well.
 
 
 <h1>General Usage:</h2>
