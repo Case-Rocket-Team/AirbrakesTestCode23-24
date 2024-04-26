@@ -18,10 +18,8 @@ Adafruit_Sensor *dps_pressure;
 
 #define DIR1 6
 #define PWM1 5
-#define encoderPinA 3
-#define encoderPinB 2
 
-#define limitSwitchOne 8
+#define limitSwitchOne 3
 #define limitSwitchTwo 4
 #define SDChipSelect 9
 #define flashChipSelect 10
@@ -71,6 +69,17 @@ bool logToFlash() {
   if (res) curFlashAddr += sizeof(oneRecord);
   return res;
 }
+
+//void dumpToSD(){
+//  File file = SD.open("data.csv");
+//  if(file) {
+//    unsigned int _addr = 0;
+//    while(_addr < curFlashAddr, file){
+//      structToCSV(_addr, file);
+//      _addr += sizeof(dataList);
+//    }
+//  }
+//}
 
 void padIdle() {
   oneRecord.launch = detectLaunch();
