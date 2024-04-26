@@ -128,9 +128,11 @@ Remove the SD card from the SD card slot, and enter 1234567890 to confirm that y
 
 **CODE IS STUCK/NOT PROCEEDING AS EXPECTED**
 1. IMMEDIATELY feel the Arduino to confirm that it is not hot. If it is, *DISCONNECT THE BATTERY AND ANY COMPUTERS/OTHER DEVICES ASAP.*
-2. Reset the board by pressing the button.
-3. If the problem persists, reflash the code to the board.
-4. Check that the ICM20948 and DPS310 are properly connected to the board.
+2. Check if the Arduino's lights are on. If they are not, *DISCONNECT THE BATTERY AND ANY COMPUTERS/OTHER DEVICES ASAP.* There is likely a short somewhere. Check wiring.
+3. Reset the board by pressing the button.
+4. If the problem persists, reflash the code to the board.
+5. Check that the ICM20948 and DPS310 are properly connected to the board.
+6. Check that the SD Card and flash chip are wired correctly (e.g. ground and CS wires are connected).
 
 **CODE IS NOT WRITING TO SERIAL**
 1. Confirm that the baud rate on your device is set to 115200.
@@ -150,3 +152,5 @@ Remove the SD card from the SD card slot, and enter 1234567890 to confirm that y
 6. If they are, disconnect the motor from the motor driver, and use a 12V power supply to try to drive the motor directly.
 7. If the motor still does not spin, it is broken. Replace the motor.
 8. If the motor does spin when connected directly to power, the motor driver is broken. Replace the motor driver.
+
+
