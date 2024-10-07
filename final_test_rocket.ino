@@ -1,13 +1,12 @@
 // Basic demo for accelerometer readings from Adafruit ICM20948
 
-#include <Adafruit_ICM20X.h>
 #include <Adafruit_ICM20948.h>
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 #include <Adafruit_DPS310.h>
 #include <Encoder.h>
 #include <SPIMemory.h>
-//#include <SD.h>
+#include <SD.h>
 
 Adafruit_ICM20948 myIMU;
 uint16_t measurement_delay_us = 65535; // Delay between measurements for testing
@@ -23,12 +22,9 @@ Adafruit_Sensor *dps_pressure;
 #define limitSwitchTwo 4
 #define SDChipSelect 9
 #define flashChipSelect 10
-#define sharedBlue 11
-#define sharedYellow 12
-#define sharedGreen 13
-
-sensors_event_t temp_event, pressure_event, accel, gyro, temp, mag;
-
+#define encoderPinA 2
+#define encoderPinB 1
+sensors_event_t pressure_event, accel, gyro, temp, mag;
 
 //Encoder myEnc(encoderPinA, encoderPinB);
 
@@ -70,16 +66,16 @@ bool logToFlash() {
   return res;
 }
 
-//void dumpToSD(){
-//  File file = SD.open("data.csv");
-//  if(file) {
-//    unsigned int _addr = 0;
-//    while(_addr < curFlashAddr, file){
-//      structToCSV(_addr, file);
-//      _addr += sizeof(dataList);
-//    }
-//  }
-//}
+void dumpToSD(){
+  File file = SD.open("data.csv");
+  if(file) {
+    unsigned int _addr = 0;
+    while(_addr < curFlashAddr, file){
+      structToCSV(_addr, file);
+      _addr += sizeof(dataList);
+    }
+  }
+}
 
 void padIdle() {
   oneRecord.launch = detectLaunch();
@@ -116,7 +112,7 @@ void padIdle() {
     logToFlash();
   }
   delay(10000);
-  //dumpToSD();
+  dumpToSD();
   int option = 0;
   Serial.println(F("ENTER 1234567890 ONCE YOU HAVE EJECTED THE SD CARD."));
   while (option == 0) {
@@ -130,6 +126,28 @@ void padIdle() {
 }
 
 
+// A utility function for iteratively entering all the data from a datalist struct
+// into a file (passed in as fileName) at address _addr.
+// IMPORTANT: Make sure that at least 67 bytes of memory in the flash chip are available
+// from _addr counting upwards, to prevent a potential out-of-bounds error.
+void structToCSV(unsigned int _addr, File fileName){
+  fileName.print(flash.readWord(_addr));
+  _addr += 2;
+  fileName.print(flash.readULong(_addr));
+  _addr += 4;
+  // loop over the 14 consecutive floats in the data struct
+  for(int i = 0; i < 14; i++){
+    fileName.print(flash.readFloat(_addr));
+    _addr += 4;
+  }
+  for(int i = 0; i < 5; i++){
+    bool data;
+    flash.readAnything(_addr, data);
+    fileName.print(data);
+    _addr += 1;
+
+  }
+}
 
 
 // Helper method to calculate motor count required to extend airbrakes from angle parameter
@@ -214,8 +232,8 @@ void recordData(int startTime, int currentTime) {
   oneRecord.recordNumber++;
   oneRecord.timeStamp = currentTime - startTime;
   //if (dps.temperatureAvailable()) {
-    dps_temp->getEvent(&temp_event);
-    oneRecord.dpsTemperature = temp_event.temperature;
+    dps_temp->getEvent(&temp);
+    oneRecord.dpsTemperature = temp.temperature;
   //}
   //if (dps.pressureAvailable()) {
     dps_pressure->getEvent(&pressure_event);
@@ -335,19 +353,21 @@ void setup(void) {
   dps_pressure = dps.getPressureSensor();
   dps.begin_I2C();
 
-  // myIMU.setAccelRange(ICM20948_ACCEL_RANGE_16_G);
+  flash.begin()
+
+  myIMU.setAccelRange(ICM20948_ACCEL_RANGE_16_G);
 
 
-  // myIMU.setGyroRange(ICM20948_GYRO_RANGE_2000_DPS);
+  myIMU.setGyroRange(ICM20948_GYRO_RANGE_2000_DPS);
 
 
-  //  myIMU.setAccelRateDivisor(4095);
+  myIMU.setAccelRateDivisor(4095);
 
 
-  //  myIMU.setGyroRateDivisor(255);
+  myIMU.setGyroRateDivisor(255);
 
 
-  // myIMU.setMagDataRate(AK09916_MAG_DATARATE_10_HZ);
+  myIMU.setMagDataRate(AK09916_MAG_DATARATE_10_HZ);
 
   pinMode(PWM1, OUTPUT);
   pinMode(DIR1, OUTPUT);
