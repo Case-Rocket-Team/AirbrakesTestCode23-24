@@ -353,7 +353,7 @@ void setup(void) {
   dps_pressure = dps.getPressureSensor();
   dps.begin_I2C();
 
-  flash.begin()
+  flash.begin();
 
   myIMU.setAccelRange(ICM20948_ACCEL_RANGE_16_G);
 
