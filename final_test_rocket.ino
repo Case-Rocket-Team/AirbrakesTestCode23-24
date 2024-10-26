@@ -5,13 +5,13 @@
 #include <Wire.h>
 #include <Adafruit_DPS310.h>
 #include <Encoder.h>
-#include <SPIMemory.h>
+#include <SerialFlash.h>
 #include <SD.h>
 
 Adafruit_ICM20948 myIMU;
 uint16_t measurement_delay_us = 65535; // Delay between measurements for testing
 
-
+Adafruit_DPS310 dps;
 Adafruit_Sensor *dps_temp;
 Adafruit_Sensor *dps_pressure;
 
@@ -20,25 +20,33 @@ Adafruit_Sensor *dps_pressure;
 
 #define limitSwitchOne 3
 #define limitSwitchTwo 4
-#define SDChipSelect 9
+#define SDChipSelect 53
 #define flashChipSelect 10
 #define encoderPinA 2
 #define encoderPinB 1
+#define burnoutTime1 1000000
+#define burnoutTime2 1800000
 sensors_event_t pressure_event, accel, gyro, temp, mag;
 
-//Encoder myEnc(encoderPinA, encoderPinB);
+Encoder myEnc(encoderPinA, encoderPinB);
 
 float seaLevelPressure = 0;  //current pressure at sea level, to be defined by user
 
 boolean isCalibrated = false;  //boolean flag to prevent action before calibration completes
 
-unsigned int startFlashAddr, curFlashAddr = 0;  //counters to track current flash addresses being written to
+unsigned long curAddr = 0;  //counters to track current flash addresses being written to
 
-SPIFlash flash;
+unsigned long recordNum = 0;
+
+boolean deployAirbrakes = 0;
+
+SerialFlashFile sff;
+
+File file;
 
 struct dataList {
-  uint16_t recordNumber;
-  uint32_t timeStamp;
+  unsigned long recordNumber;
+  unsigned long timeStamp;
   float dpsTemperature;
   float imuTemperature;
   float pressure;
@@ -61,20 +69,25 @@ struct dataList {
 } oneRecord;
 
 bool logToFlash() {
-  bool res = flash.writeAnything(curFlashAddr, oneRecord);
-  if (res) curFlashAddr += sizeof(oneRecord);
-  return res;
+  sff.write(&oneRecord, sizeof(oneRecord));
+  sff.seek(sff.position() + sizeof(oneRecord));
+  curAddr++;
+  
+  return true;
 }
 
 void dumpToSD(){
-  File file = SD.open("data.csv");
-  if(file) {
-    unsigned int _addr = 0;
-    while(_addr < curFlashAddr, file){
-      structToCSV(_addr, file);
-      _addr += sizeof(dataList);
-    }
+  Serial.println("Dumping to SD");
+  file = SD.open("data.bin", FILE_WRITE);
+  
+  sff.seek(0);
+  char buf[sizeof(oneRecord)];
+  for(int i = 0; i < curAddr; i++){
+    sff.read(buf, sizeof(oneRecord));
+    file.write(buf, sizeof(oneRecord));
   }
+
+  file.close();
 }
 
 void padIdle() {
@@ -84,33 +97,42 @@ void padIdle() {
     oneRecord.launch = detectLaunch();
   }
   Serial.println("Launched!");
-  int timeStart = micros();
-  int currentTime = micros();
+  unsigned long timeStart = micros();
+  unsigned long currentTime = micros();
   while (!oneRecord.burnout) {
     currentTime = micros();
     recordData(timeStart, currentTime);
     logToFlash();
-    if (currentTime - timeStart > 1000000) {
+    if (currentTime - timeStart > burnoutTime1) {
+      
       oneRecord.burnout = detectBurnout();
-      if (currentTime - timeStart > 1800000) {
+      if (currentTime - timeStart > burnoutTime2) {
         oneRecord.burnout = true;
       }
     }
   }
+  Serial.println("Burnout detected");
   
 
   delay(1000);
-  oneRecord.extending = true;
-  extendAirbrakes(timeStart);
+  if(deployAirbrakes){
+    oneRecord.extending = true;
+    extendAirbrakes(timeStart);
+  }
+  
   delay(1000);
-  oneRecord.retracting = true;
-  retractAirbrakes(timeStart);
-  while (!oneRecord.touchdown) {
-    oneRecord.touchdown = detectTouchdown();
+  if(deployAirbrakes){
+    oneRecord.retracting = true;
+    retractAirbrakes(timeStart);
+  }
+  
+  while (currentTime - timeStart < 300000000) {
     currentTime = micros();
     recordData(timeStart, currentTime);
     logToFlash();
   }
+
+  Serial.println("Touchdown detected");
   delay(10000);
   dumpToSD();
   int option = 0;
@@ -126,30 +148,6 @@ void padIdle() {
 }
 
 
-// A utility function for iteratively entering all the data from a datalist struct
-// into a file (passed in as fileName) at address _addr.
-// IMPORTANT: Make sure that at least 67 bytes of memory in the flash chip are available
-// from _addr counting upwards, to prevent a potential out-of-bounds error.
-void structToCSV(unsigned int _addr, File fileName){
-  fileName.print(flash.readWord(_addr));
-  _addr += 2;
-  fileName.print(flash.readULong(_addr));
-  _addr += 4;
-  // loop over the 14 consecutive floats in the data struct
-  for(int i = 0; i < 14; i++){
-    fileName.print(flash.readFloat(_addr));
-    _addr += 4;
-  }
-  for(int i = 0; i < 5; i++){
-    bool data;
-    flash.readAnything(_addr, data);
-    fileName.print(data);
-    _addr += 1;
-
-  }
-}
-
-
 // Helper method to calculate motor count required to extend airbrakes from angle parameter
 int calculateTargetCount(float angle) {
   return 0;  //NOT YET IMPLEMENTED, LOWER PRIORITY
@@ -161,8 +159,8 @@ int calculateTargetCount(float angle) {
 void retractAirbrakes(int startTime) {
   Serial.println(digitalRead(limitSwitchOne));
   while(digitalRead(limitSwitchOne)==LOW){
-  //recordData(startTime, micros());
-  //logToFlash();
+  recordData(startTime, micros());
+  logToFlash();
   digitalWrite(DIR1, LOW);
   analogWrite(PWM1, 255);
   }
@@ -177,8 +175,8 @@ void extendAirbrakes(int startTime) {
   while(digitalRead(limitSwitchTwo) == LOW){
   digitalWrite(PWM1, LOW);
   analogWrite(DIR1, 255);
-  //recordData(startTime, micros());
-  //logToFlash();
+  recordData(startTime, micros());
+  logToFlash();
   }
   digitalWrite(PWM1, LOW);
   analogWrite(DIR1, 0);
@@ -187,58 +185,30 @@ void extendAirbrakes(int startTime) {
 // Detects if a launch event has occurred based on accelerometer
 // readings exceeding a threshold value of 3 Gs.
 boolean detectLaunch() {
-  boolean launch = false;
   myIMU.getEvent(&accel, &gyro, &temp);
-  if (abs(accel.acceleration.z > 30)) {
-    launch = true;
-  }
-  return launch;
+  return abs(accel.acceleration.z) > 5;
 }
 
 // Detects if a burnout event has occurred based on accelerometer
 // readings falling below a threshold value. of 4 Gs.
 boolean detectBurnout() {
-  boolean burnout = false;
   myIMU.getEvent(&accel, &gyro, &temp);
-  if (abs(accel.acceleration.z < 40)) {
-    burnout = true;
-  }
-  return burnout;
-}
-
-// Detects touchdown by checking for 10 consecutive acceleration values
-// near 1. Returns true if touchdown detected and false otherwise.
-boolean detectTouchdown() {
-  int ctr = 0;
-  boolean touchdown = false;
-  if (oneRecord.resAcceleration >= 0.7 && oneRecord.resAcceleration <= 1.3) {
-    while (ctr < 10) {
-      myIMU.getEvent(&accel, &gyro, &temp);
-      if (accel.acceleration.z >= 7 && accel.acceleration.z <= 13) {
-        ctr++;
-      } else {
-        return false;
-      }
-    }
-    return true;
-  }
-  return false;
+  return abs(accel.acceleration.z) < 40;
 }
 
 // Updates the datalist struct with new values from sensors
 void recordData(int startTime, int currentTime) {
-
   myIMU.getEvent(&accel, &gyro, &temp);
-  oneRecord.recordNumber++;
+  oneRecord.recordNumber = recordNum++;
   oneRecord.timeStamp = currentTime - startTime;
-  //if (dps.temperatureAvailable()) {
+  if (dps.temperatureAvailable()) {
     dps_temp->getEvent(&temp);
     oneRecord.dpsTemperature = temp.temperature;
-  //}
-  //if (dps.pressureAvailable()) {
+  }
+  if (dps.pressureAvailable()) {
     dps_pressure->getEvent(&pressure_event);
     oneRecord.pressure = pressure_event.pressure;
-  //}
+  }
   oneRecord.accelX = accel.acceleration.x;
   oneRecord.accelY = accel.acceleration.y;
   oneRecord.accelZ = accel.acceleration.z;
@@ -254,28 +224,13 @@ void recordData(int startTime, int currentTime) {
 
 void motorTest() {
   int option = 0;
-  Serial.println(F("Enter: \n 1 for User Input Mode \n 2 for One Cycle \n 3 for Full Deploy \n 4 for Retract \n 5 for Main Menu"));
+  Serial.println(F("Enter: \n 1  for One Cycle \n 3 for Full Deploy \n 4 for Retract \n 5 for Main Menu"));
 
   while (option == 0) {
     option = Serial.parseInt();
     switch (option) {
 
       case 1:
-        {
-          Serial.println(F("Please enter the angle you wish to deploy to."));
-          float deployAngle = 0.0;
-          while (deployAngle == 0) {
-            deployAngle = Serial.parseFloat();
-            if (deployAngle <= 0 || deployAngle > 56) {  //TODO: Replace 56 with full extend angle
-              //Serial.println(F("Invalid Input. Please enter a floating point number greater than zero and less than or equal to (INSERT TRUE MAX ANGLE HERE)."));
-            }
-          }
-
-          //extendAirbrakes(calculateTargetCount(deployAngle), 0);
-          break;
-        }
-
-      case 2:
         {
           Serial.println(F("Retracting"));
           retractAirbrakes(0);
@@ -289,7 +244,7 @@ void motorTest() {
           break;
         }
 
-      case 3:
+      case 2:
         {
           //retractAirbrakes(0);
           extendAirbrakes(0);  //TODO: Replace 1000 with full extend count
@@ -297,14 +252,14 @@ void motorTest() {
           break;
         }
 
-      case 4:
+      case 3:
         {
           retractAirbrakes(0);
           option = 0;
           break;
         }
 
-      case 5:
+      case 4:
         {
           break;
         }
@@ -337,8 +292,6 @@ void setup(void) {
   while (!Serial)
     delay(10); // will pause Zero, Leonardo, etc until serial console opens
 
-  Serial.println("Adafruit ICM20948 test!");
-
   // Try to initialize!
   if (!myIMU.begin_I2C(0x69)) {
 
@@ -348,13 +301,20 @@ void setup(void) {
     }
   }
   Serial.println("ICM20948 Found!");
-  Adafruit_DPS310 dps;
+
+  dps.begin_I2C();
   dps_temp = dps.getTemperatureSensor();
   dps_pressure = dps.getPressureSensor();
-  dps.begin_I2C();
 
-  flash.begin();
+  if (!SerialFlash.begin(flashChipSelect)){
+    Serial.println("Failed to init flash");
+  }
+  sff = SerialFlash.open("flash.bin");
 
+  if(!SD.begin(53)){
+    Serial.println("Failed to init SD");
+  }
+  
   myIMU.setAccelRange(ICM20948_ACCEL_RANGE_16_G);
 
 
