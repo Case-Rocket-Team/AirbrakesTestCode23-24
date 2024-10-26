@@ -22,8 +22,8 @@ Adafruit_Sensor *dps_pressure;
 #define limitSwitchTwo 4
 #define SDChipSelect 53
 #define flashChipSelect 10
-#define encoderPinA 2
-#define encoderPinB 1
+#define encoderPinA 7
+#define encoderPinB 8
 #define burnoutTime1 1000000
 #define burnoutTime2 1800000
 sensors_event_t pressure_event, accel, gyro, temp, mag;
@@ -38,7 +38,7 @@ unsigned long curAddr = 0;  //counters to track current flash addresses being wr
 
 unsigned long recordNum = 0;
 
-boolean deployAirbrakes = 0;
+boolean deployAirbrakes = false;
 
 SerialFlashFile sff;
 
@@ -61,6 +61,7 @@ struct dataList {
   float gyrX;
   float gyrY;
   float gyrZ;
+  double encoderCounts;
   bool launch;
   bool burnout;
   bool extending;
@@ -186,6 +187,7 @@ void extendAirbrakes(int startTime) {
 // readings exceeding a threshold value of 3 Gs.
 boolean detectLaunch() {
   myIMU.getEvent(&accel, &gyro, &temp);
+  Serial.println(accel.acceleration.z);
   return abs(accel.acceleration.z) > 30;
 }
 
@@ -220,6 +222,8 @@ void recordData(int startTime, int currentTime) {
   oneRecord.gyrX = gyro.gyro.x;
   oneRecord.gyrY = gyro.gyro.y;
   oneRecord.gyrZ = gyro.gyro.z;
+  oneRecord.encoderCounts = myEnc.read();
+  Serial.println(oneRecord.encoderCounts);
 }
 
 void motorTest() {
@@ -283,7 +287,18 @@ void calibrate() {
     }
   }
   //TODO: Motor calibration??? DPS Calibration???
-
+  Serial.println("Should the airbrakes deploy? T or F");
+  while(!deployAirbrakes){
+    String selection = Serial.readString();
+    if (selection == "F\n"){
+      break;
+    } else if (selection == "T\n") {
+      deployAirbrakes = true;
+    } else {
+      Serial.println(F("Invalid Input. Please enter T or F"));
+    }
+  }
+  
   isCalibrated = true;
 }
 
@@ -314,6 +329,7 @@ void setup(void) {
   if(!SD.begin(53)){
     Serial.println("Failed to init SD");
   }
+  
   
   myIMU.setAccelRange(ICM20948_ACCEL_RANGE_16_G);
 
