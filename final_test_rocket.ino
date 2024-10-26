@@ -186,7 +186,7 @@ void extendAirbrakes(int startTime) {
 // readings exceeding a threshold value of 3 Gs.
 boolean detectLaunch() {
   myIMU.getEvent(&accel, &gyro, &temp);
-  return abs(accel.acceleration.z) > 5;
+  return abs(accel.acceleration.z) > 30;
 }
 
 // Detects if a burnout event has occurred based on accelerometer
